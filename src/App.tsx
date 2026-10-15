@@ -27,104 +27,151 @@ import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { CustomerAccountPage } from './pages/CustomerAccountPage';
 import { PRODUCTS } from './data/products';
 
+// Helper to extract base path (e.g. "/Decent-School-Furniture-12") on subpath deployments like GitHub Pages
+export function getRepoBase(): string {
+  if (typeof window === 'undefined') return '';
+  const pathname = window.location.pathname || '';
+  const appRoutes = ['/collections', '/products', '/pages', '/policies', '/cart', '/account'];
+  const match = pathname.match(/^(\/[^/]+)/);
+  if (match) {
+    const firstSegment = match[1];
+    if (firstSegment && !appRoutes.includes(firstSegment)) {
+      return firstSegment;
+    }
+  }
+  return '';
+}
+
+export function getNormalizedPath(): string {
+  if (typeof window === 'undefined') return '/';
+  if (window.location.hash) {
+    const hash = window.location.hash.replace(/^#/, '');
+    if (hash.startsWith('/')) return hash;
+    return '/' + hash;
+  }
+  const rawPath = window.location.pathname || '/';
+  const base = getRepoBase();
+  if (base && rawPath.startsWith(base)) {
+    const stripped = rawPath.slice(base.length);
+    return stripped.startsWith('/') ? stripped : '/' + stripped;
+  }
+  return rawPath || '/';
+}
+
 export function AppContent() {
   const [currentPath, setCurrentPath] = useState<string>(() => {
-    return window.location.pathname || '/';
+    return getNormalizedPath();
   });
 
   const navigate = (path: string) => {
-    setCurrentPath(path);
-    window.history.pushState({}, '', path);
+    const cleanPath = path.startsWith('/') ? path : '/' + path;
+    const base = getRepoBase();
+    const targetUrl = base ? `${base}${cleanPath}` : cleanPath;
+
+    setCurrentPath(cleanPath);
+    try {
+      window.history.pushState({}, '', targetUrl);
+    } catch {
+      window.location.hash = cleanPath;
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentPath(window.location.pathname || '/');
+      setCurrentPath(getNormalizedPath());
     };
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handlePopState);
+    };
   }, []);
 
   // Determine which page to render
   const renderPage = () => {
+    const path = currentPath.length > 1 && currentPath.endsWith('/')
+      ? currentPath.slice(0, -1)
+      : currentPath;
+
     // 1. Home
-    if (currentPath === '/' || currentPath === '') {
+    if (path === '/' || path === '') {
       return <HomePage onNavigate={navigate} />;
     }
 
     // 2. Catalogue (All Products)
-    if (currentPath === '/collections/all' || currentPath === '/collections' || currentPath === '/products') {
+    if (path === '/collections/all' || path === '/collections' || path === '/products') {
       return <CataloguePage initialCategory="all" onNavigate={navigate} />;
     }
 
     // 3. Category Specific Collections
-    if (currentPath.startsWith('/collections/')) {
-      const categoryHandle = currentPath.replace('/collections/', '');
+    if (path.startsWith('/collections/')) {
+      const categoryHandle = path.replace('/collections/', '');
       return <CataloguePage initialCategory={categoryHandle} onNavigate={navigate} />;
     }
 
     // 4. Product Details
-    if (currentPath.startsWith('/products/')) {
-      const handle = currentPath.replace('/products/', '');
+    if (path.startsWith('/products/')) {
+      const handle = path.replace('/products/', '');
       const product = PRODUCTS.find((p) => p.handle === handle) || PRODUCTS[0];
       return <ProductDetailPage product={product} onNavigate={navigate} />;
     }
 
     // 5. About Us
-    if (currentPath === '/pages/about') {
+    if (path === '/pages/about') {
       return <AboutPage onNavigate={navigate} />;
     }
 
     // 6. Projects & Gallery
-    if (currentPath === '/pages/projects') {
+    if (path === '/pages/projects') {
       return <ProjectsPage onNavigate={navigate} />;
     }
 
     // 7. Custom Orders
-    if (currentPath === '/pages/custom-orders') {
+    if (path === '/pages/custom-orders') {
       return <CustomOrdersPage onNavigate={navigate} />;
     }
 
     // 8. FAQs
-    if (currentPath === '/pages/faqs') {
+    if (path === '/pages/faqs') {
       return <FaqsPage onNavigate={navigate} />;
     }
 
     // 9. Contact Us
-    if (currentPath === '/pages/contact') {
+    if (path === '/pages/contact') {
       return <ContactPage onNavigate={navigate} />;
     }
 
     // 10. Privacy Policy
-    if (currentPath === '/policies/privacy-policy') {
+    if (path === '/policies/privacy-policy') {
       return <PoliciesPage initialTab="privacy" onNavigate={navigate} />;
     }
 
     // 11. Terms and Conditions
-    if (currentPath === '/policies/terms-of-service') {
+    if (path === '/policies/terms-of-service') {
       return <PoliciesPage initialTab="terms" onNavigate={navigate} />;
     }
 
     // 12. Cart Page
-    if (currentPath === '/cart') {
+    if (path === '/cart') {
       return <CartPage onNavigate={navigate} />;
     }
 
     // 13. Customer Authentication & Account Portal
-    if (currentPath === '/account/login') {
+    if (path === '/account/login') {
       return <LoginPage onNavigate={navigate} />;
     }
-    if (currentPath === '/account/register') {
+    if (path === '/account/register') {
       return <RegisterPage onNavigate={navigate} />;
     }
-    if (currentPath === '/account/recover' || currentPath === '/account/forgot-password') {
+    if (path === '/account/recover' || path === '/account/forgot-password') {
       return <ForgotPasswordPage onNavigate={navigate} />;
     }
     if (
-      currentPath === '/account' ||
-      currentPath === '/account/orders' ||
-      currentPath === '/account/quotations'
+      path === '/account' ||
+      path === '/account/orders' ||
+      path === '/account/quotations'
     ) {
       return <CustomerAccountPage onNavigate={navigate} />;
     }
