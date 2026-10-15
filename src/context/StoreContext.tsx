@@ -145,7 +145,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               userId: currentUser.uid,
               email: currentUser.email || '',
               displayName: currentUser.displayName || 'School Partner',
-              role: currentUser.email === 'xghost1704@gmail.com' ? 'admin' : 'customer',
+              role: (currentUser.email === 'aanothing01@gmail.com' || currentUser.email === 'xghost1704@gmail.com') ? 'admin' : 'customer',
               createdAt: new Date().toISOString(),
               accountMode: 'classic',
             };

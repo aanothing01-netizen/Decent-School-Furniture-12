@@ -113,7 +113,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
       setEmail('principal@beaconhouse.edu.pk');
       setPassword('DecentSchool2025!');
     } else {
-      setEmail('xghost1704@gmail.com');
+      setEmail('aanothing01@gmail.com');
       setPassword('AdminDecent2025!');
     }
   };
